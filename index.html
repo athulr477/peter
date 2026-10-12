@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d111a">
+  <meta name="format-detection" content="telephone=no">
+  <title>Beach Penalty Shootout — Real Swipe Challenge</title>
+  <meta name="description" content="Realistic beach soccer penalty shootout game. Swipe to curve, dip, and shoot past the beach goalkeeper into the rusty goal!">
+  <meta name="application-name" content="Beach Penalty">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="gameContainer" class="game-container">
+    <!-- Main 2D Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top HUD Overlay -->
+    <header id="gameHUD" class="hud-layer">
+      <!-- Score Box -->
+      <div class="hud-card score-box">
+        <span class="hud-label">SCORE</span>
+        <span id="scoreValue" class="hud-number">0</span>
+        <div id="attemptIndicators" class="attempt-indicators">
+          <div class="attempt-dot current"></div>
+          <div class="attempt-dot"></div>
+          <div class="attempt-dot"></div>
+          <div class="attempt-dot"></div>
+          <div class="attempt-dot"></div>
+        </div>
+      </div>
+
+      <!-- Center Title Badge -->
+      <div class="hud-title-badge">
+        <span class="title-sun">☀️</span>
+        <h1 class="title-text">BEACH PENALTY</h1>
+      </div>
+
+      <!-- Round & Pause Controls -->
+      <div class="hud-right-group">
+        <div class="hud-card round-box">
+          <span class="hud-label">ROUND</span>
+          <span id="roundValue" class="hud-number">1/5</span>
+        </div>
+        <button id="pauseBtn" class="hud-btn pause-btn" aria-label="Pause Game" title="Pause Game">
+          <span class="pause-icon"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Swipe-to-Shoot Tutorial (Lower Right) -->
+    <aside id="swipeTutorial" class="swipe-tutorial">
+      <div class="tutorial-graphic">
+        <div class="tutorial-arrow"></div>
+        <div class="tutorial-hand">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="hand-svg">
+            <path d="M18 10V26C18 27.1 18.9 28 20 28C21.1 28 22 27.1 22 26V8C22 6.9 22.9 6 24 6C25.1 6 26 6.9 26 8V26C26 27.1 26.9 28 28 28C29.1 28 30 27.1 30 26V12C30 10.9 30.9 10 32 10C33.1 10 34 10.9 34 12V28.5C34 35.4 28.4 41 21.5 41C16.8 41 12.7 38.3 10.7 34.2L6.8 26.3C6.3 25.3 6.6 24.1 7.5 23.4C8.5 22.7 9.8 22.9 10.6 23.8L14 27.6V6C14 4.9 14.9 4 16 4C17.1 4 18 4.9 18 6V10Z" fill="white" stroke="#111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tutorial-badge">
+        <span class="tutorial-text">SWIPE TO SHOOT</span>
+      </div>
+    </aside>
+
+    <!-- Shot Result Popup Banner -->
+    <div id="resultBanner" class="result-banner hidden">
+      <span id="resultText" class="result-text">GOAL!</span>
+    </div>
+
+    <!-- Pause Menu Modal -->
+    <div id="pauseModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <h2 class="modal-title">GAME PAUSED</h2>
+        <div class="modal-buttons">
+          <button id="resumeBtn" class="btn btn-primary">
+            <span class="btn-icon">▶</span> RESUME
+          </button>
+          <button id="soundToggleBtn" class="btn btn-secondary">
+            <span id="soundIcon" class="btn-icon">🔊</span>
+            <span class="label">SOUND: ON</span>
+          </button>
+          <button id="restartBtn" class="btn btn-tertiary">
+            <span class="btn-icon">🔄</span> RESTART ROUND
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Round Summary / Game Over Modal -->
+    <div id="summaryModal" class="modal-backdrop hidden">
+      <div class="modal-card summary-card">
+        <div class="summary-trophy">🏆</div>
+        <h2 class="modal-title">ROUND FINISHED</h2>
+        <div class="summary-score-box">
+          <span class="score-caption">FINAL SCORE</span>
+          <span id="summaryScore" class="final-score">0 / 5</span>
+        </div>
+        <p id="summaryRating" class="summary-rating">BEACH LEGEND!</p>
+        <div id="summaryDetails" class="summary-stats">
+          <!-- Populated dynamically -->
+        </div>
+        <button id="playAgainBtn" class="btn btn-primary btn-large">
+          <span class="btn-icon">⚽</span> PLAY AGAIN
+        </button>
+      </div>
+    </div>
+
+    <!-- Asset Preloader Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loader-content">
+        <div class="ball-spin-icon">⚽</div>
+        <h2 class="loader-title">BEACH PENALTY SHOOTOUT</h2>
+        <p class="loader-sub">Preparing coastal stadium & goalkeeper...</p>
+        <div class="loader-track">
+          <div id="loadingBar" class="loader-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

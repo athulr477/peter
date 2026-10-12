@@ -1,0 +1,22 @@
+test/
+node_modules/
+*.md
+.git
+.gitignore
+package.json
+package-lock.json
+
+# Exclude original unoptimized source images (only cutouts are used)
+Smiling Goalkeeper Ready for Action.png
+Smiling Goalkeeper in Guard Stance.png
+Beach Soccer Swipe Challenge.png
+Worn Classic Soccer Ball Cutout.png
+WhatsApp Image 2026-10-09 at 11.04.35 PM.jpeg
+beach-goal-bg.jpg
+goalkeeper-guard-cutout.png
+goalkeeper-ready-cutout.png
+
+# Exclude reference/original photos from assets (only cutouts needed)
+assets/beach-reference.png
+assets/goalkeeper-guard.png
+assets/goalkeeper-ready.png

@@ -1,0 +1,20 @@
+{
+  "name": "beach-penalty-shootout",
+  "version": "1.0.0",
+  "description": "Realistic Beach Penalty Shootout Game built with HTML5, CSS, and Vanilla JavaScript",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 5173",
+    "dev": "python -m http.server 5173",
+    "test": "node test/game-tests.mjs"
+  },
+  "keywords": [
+    "beach-soccer",
+    "penalty-shootout",
+    "html5-game",
+    "canvas",
+    "javascript"
+  ],
+  "author": "Antigravity Senior Game Engineer",
+  "license": "MIT"
+}
