@@ -117,6 +117,35 @@ export class ParticleSystem {
     }
   }
 
+  // Bullseye target shattered ring burst
+  emitTargetShatter(x, y) {
+    const n = this._getEffectiveCount(45);
+    const colors = [
+      [255, 215, 0],   // Gold
+      [0, 240, 255],   // Cyan
+      [255, 255, 255], // White
+      [255, 80, 80],   // Red
+    ];
+    for (let i = 0; i < n; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 50 + Math.random() * 180;
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      const p = this._getParticle();
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 40;
+      p.size = 3 + Math.random() * 4.5;
+      p.r = c[0];
+      p.g = c[1];
+      p.b = c[2];
+      p.alpha = 1.0;
+      p.decay = 0.9 + Math.random() * 0.6;
+      p.gravity = 100;
+      this.particles.push(p);
+    }
+  }
+
   // Dynamic net ripple shockwave
   triggerNetRipple(targetX, targetY) {
     // Cap ripples

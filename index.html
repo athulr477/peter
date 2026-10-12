@@ -27,32 +27,51 @@
 
     <!-- Top HUD Overlay -->
     <header id="gameHUD" class="hud-layer">
-      <!-- Score Box -->
-      <div class="hud-card score-box">
-        <span class="hud-label">SCORE</span>
-        <span id="scoreValue" class="hud-number">0</span>
-        <div id="attemptIndicators" class="attempt-indicators">
-          <div class="attempt-dot current"></div>
-          <div class="attempt-dot"></div>
-          <div class="attempt-dot"></div>
-          <div class="attempt-dot"></div>
-          <div class="attempt-dot"></div>
+      <!-- Left Group: Score & Target -->
+      <div class="hud-left-group">
+        <div class="hud-card score-box">
+          <span class="hud-label">SCORE</span>
+          <span id="scoreValue" class="hud-number">0</span>
+          <div id="attemptIndicators" class="attempt-indicators">
+            <div class="attempt-dot current"></div>
+            <div class="attempt-dot"></div>
+            <div class="attempt-dot"></div>
+            <div class="attempt-dot"></div>
+            <div class="attempt-dot"></div>
+          </div>
+        </div>
+        <div class="hud-card target-box">
+          <span class="hud-label">TARGET</span>
+          <span id="targetValue" class="hud-target-num">2 GOALS</span>
         </div>
       </div>
 
-      <!-- Center Title Badge -->
-      <div class="hud-title-badge">
-        <span class="title-sun">☀️</span>
-        <h1 class="title-text">BEACH PENALTY</h1>
+      <!-- Center Group: Level Badge & Wind -->
+      <div class="hud-center-group">
+        <button id="levelBadgeBtn" class="hud-card level-badge-card" aria-label="Select Level" title="Select Level">
+          <span class="hud-label">LEVEL <span id="hudLevelNum">1</span></span>
+          <span id="hudLevelName" class="hud-level-title">ROOKIE WARMUP</span>
+          <div id="hudLevelStars" class="hud-mini-stars">★★★</div>
+        </button>
+        <div id="hudWindWidget" class="hud-wind-widget hidden">
+          <span class="wind-icon">💨</span>
+          <span id="hudWindText" class="wind-text">12 km/h ➔</span>
+        </div>
       </div>
 
-      <!-- Round & Pause Controls -->
+      <!-- Right Group: Kick + Level Select + Restart + Pause Controls -->
       <div class="hud-right-group">
         <div class="hud-card round-box">
-          <span class="hud-label">ROUND</span>
+          <span class="hud-label">KICK</span>
           <span id="roundValue" class="hud-number">1/5</span>
         </div>
-        <button id="pauseBtn" class="hud-btn pause-btn" aria-label="Pause Game" title="Pause Game">
+        <button id="openLevelSelectBtn" class="hud-btn levels-btn" aria-label="Level Select" title="Level Select">
+          <span class="btn-icon">📋</span>
+        </button>
+        <button id="quickRestartBtn" class="hud-btn restart-btn" aria-label="Restart Round" title="Restart Round (R)">
+          <span class="restart-icon">🔄</span>
+        </button>
+        <button id="pauseBtn" class="hud-btn pause-btn" aria-label="Pause Game" title="Pause Game (Esc)">
           <span class="pause-icon"></span>
         </button>
       </div>
@@ -69,13 +88,77 @@
         </div>
       </div>
       <div class="tutorial-badge">
-        <span class="tutorial-text">SWIPE TO SHOOT</span>
+        <span class="tutorial-text">SWIPE TO CORNERS TO SCORE!</span>
       </div>
     </aside>
 
     <!-- Shot Result Popup Banner -->
     <div id="resultBanner" class="result-banner hidden">
       <span id="resultText" class="result-text">GOAL!</span>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div id="levelSelectModal" class="modal-backdrop hidden">
+      <div class="modal-card level-select-card">
+        <div class="modal-header-row">
+          <h2 class="modal-title">SELECT LEVEL</h2>
+          <button id="closeLevelSelectBtn" class="close-modal-btn" aria-label="Close Level Select">✕</button>
+        </div>
+        <div class="total-stars-badge">
+          <span class="star-icon">⭐</span>
+          <span id="totalStarsCount">0</span> / 18 STARS EARNED
+        </div>
+        <div id="levelsGrid" class="levels-grid">
+          <!-- Populated dynamically via LevelManager -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Result Modal (Cleared / Failed) -->
+    <div id="levelResultModal" class="modal-backdrop hidden">
+      <div class="modal-card level-result-card">
+        <div id="resultTrophyIcon" class="result-hero-icon">🏆</div>
+        <h2 id="resultHeaderTitle" class="modal-title">LEVEL CLEARED!</h2>
+        <p id="resultLevelSub" class="level-sub-title">LEVEL 1: ROOKIE WARMUP</p>
+
+        <!-- 3-Star Rating Animation -->
+        <div class="star-rating-container">
+          <div id="star1" class="result-star">★</div>
+          <div id="star2" class="result-star">★</div>
+          <div id="star3" class="result-star">★</div>
+        </div>
+
+        <div class="result-stats-card">
+          <div class="stat-row">
+            <span>Goals Scored:</span>
+            <strong id="resGoalsText">3 / 5</strong>
+          </div>
+          <div class="stat-row">
+            <span>Target Goal:</span>
+            <strong id="resTargetText">2 Goals</strong>
+          </div>
+          <div id="resTargetHitsRow" class="stat-row hidden">
+            <span>🎯 Bullseyes Hit:</span>
+            <strong id="resTargetHitsText">0</strong>
+          </div>
+          <div class="stat-row total-score-row">
+            <span>Level Score:</span>
+            <strong id="resPointsText">3,000 PTS</strong>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button id="nextLevelBtn" class="btn btn-primary btn-large">
+            NEXT LEVEL ➔
+          </button>
+          <button id="retryLevelBtn" class="btn btn-secondary">
+            <span class="btn-icon">🔄</span> RETRY
+          </button>
+          <button id="openLevelsFromResultsBtn" class="btn btn-tertiary">
+            <span class="btn-icon">📋</span> LEVEL SELECT
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Pause Menu Modal -->
@@ -86,18 +169,21 @@
           <button id="resumeBtn" class="btn btn-primary">
             <span class="btn-icon">▶</span> RESUME
           </button>
+          <button id="pauseLevelSelectBtn" class="btn btn-secondary">
+            <span class="btn-icon">📋</span> LEVEL SELECT
+          </button>
           <button id="soundToggleBtn" class="btn btn-secondary">
             <span id="soundIcon" class="btn-icon">🔊</span>
             <span class="label">SOUND: ON</span>
           </button>
           <button id="restartBtn" class="btn btn-tertiary">
-            <span class="btn-icon">🔄</span> RESTART ROUND
+            <span class="btn-icon">🔄</span> RESTART LEVEL
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Round Summary / Game Over Modal -->
+    <!-- Round Summary / Game Over Modal (Fallback) -->
     <div id="summaryModal" class="modal-backdrop hidden">
       <div class="modal-card summary-card">
         <div class="summary-trophy">🏆</div>

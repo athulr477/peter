@@ -284,6 +284,110 @@ class AudioManager {
     osc.start(t);
     osc.stop(t + 0.42);
   }
+
+  playTargetHit() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    // Dual high crystal bell chime
+    [1046.5, 1567.98].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, t + idx * 0.04);
+
+      gain.gain.setValueAtTime(0.35, t + idx * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.04 + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t + idx * 0.04);
+      osc.stop(t + idx * 0.04 + 0.65);
+    });
+  }
+
+  playStarReveal(starNum = 1) {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const freqs = [523.25, 659.25, 783.99]; // C5, E5, G5
+    const freq = freqs[Math.min(starNum - 1, freqs.length - 1)];
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.5);
+  }
+
+  playLevelWin() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    this.playWhistle();
+    const t = this.ctx.currentTime + 0.15;
+    // Triumphant rising arpeggio (C - E - G - C6)
+    const chord = [523.25, 659.25, 783.99, 1046.5];
+    chord.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, t + i * 0.1);
+
+      gain.gain.setValueAtTime(0, t + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.35, t + i * 0.1 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t + i * 0.1);
+      osc.stop(t + i * 0.1 + 0.55);
+    });
+  }
+
+  playLevelFail() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    // Melancholy descending notes
+    const notes = [392.0, 349.23, 311.13, 261.63];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(freq, t + i * 0.14);
+
+      gain.gain.setValueAtTime(0.18, t + i * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.14 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t + i * 0.14);
+      osc.stop(t + i * 0.14 + 0.38);
+    });
+  }
 }
 
 export const audio = new AudioManager();

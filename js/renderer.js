@@ -100,16 +100,29 @@ export class GameRenderer {
     this.canvas.style.width = `${w}px`;
     this.canvas.style.height = `${h}px`;
 
-    // Scale to fit viewport maintaining aspect ratio
+    // Scale to fit viewport maintaining aspect ratio WITHOUT CROPPING
+    // Math.min guarantees the entire pitch, posts, ball, and goal are 100% visible
     const scaleX = this.canvas.width / this.refWidth;
     const scaleY = this.canvas.height / this.refHeight;
 
-    // Use Math.max to cover the entire screen (crop edges rather than letterbox)
-    // This prevents black bars on tall/narrow phones
-    this.scale = Math.max(scaleX, scaleY);
+    this.scale = Math.min(scaleX, scaleY);
 
-    this.offsetX = (this.canvas.width - this.refWidth * this.scale) / 2;
-    this.offsetY = (this.canvas.height - this.refHeight * this.scale) / 2;
+    this.offsetX = Math.round((this.canvas.width - this.refWidth * this.scale) / 2);
+    this.offsetY = Math.round((this.canvas.height - this.refHeight * this.scale) / 2);
+
+    // Update CSS variables on game container for HUD alignment
+    const container = document.getElementById("gameContainer");
+    if (container) {
+      const cssOffsetX = Math.max(0, Math.round(this.offsetX / this.dpr));
+      const cssOffsetY = Math.max(0, Math.round(this.offsetY / this.dpr));
+      const cssGameW = Math.round((this.refWidth * this.scale) / this.dpr);
+      const cssGameH = Math.round((this.refHeight * this.scale) / this.dpr);
+
+      container.style.setProperty("--game-offset-x", `${cssOffsetX}px`);
+      container.style.setProperty("--game-offset-y", `${cssOffsetY}px`);
+      container.style.setProperty("--game-width", `${cssGameW}px`);
+      container.style.setProperty("--game-height", `${cssGameH}px`);
+    }
 
     // Enable image smoothing for scaled sprites
     this.ctx.imageSmoothingEnabled = true;
@@ -151,26 +164,54 @@ export class GameRenderer {
     return { x: refX, y: refY };
   }
 
-  render(gameState, keeper, ball, particles, input) {
+  render(gameState, keeper, ball, particles, input, targets = [], wind = 0) {
     if (!this.allLoaded) return;
 
     const ctx = this.ctx;
     ctx.save();
 
-    // Clear canvas
-    ctx.fillStyle = "#111";
+    // 0. Base dark backdrop
+    ctx.fillStyle = "#0c1017";
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Apply viewport transform
+    // 0b. If letterboxed or pillarboxed, draw ambient atmospheric backdrop
+    if (this.offsetX > 0 || this.offsetY > 0) {
+      const coverScale = Math.max(this.canvas.width / this.refWidth, this.canvas.height / this.refHeight);
+      const coverW = this.refWidth * coverScale;
+      const coverH = this.refHeight * coverScale;
+      const coverX = (this.canvas.width - coverW) / 2;
+      const coverY = (this.canvas.height - coverH) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.drawImage(this.images.bg, coverX, coverY, coverW, coverH);
+
+      // Smooth vignette gradient over margins
+      const grad = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+      grad.addColorStop(0, "rgba(10, 14, 24, 0.75)");
+      grad.addColorStop(0.5, "rgba(10, 14, 24, 0.35)");
+      grad.addColorStop(1, "rgba(10, 14, 24, 0.85)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.restore();
+    }
+
+    // Apply viewport transform for the sharp, uncropped game
     ctx.translate(this.offsetX, this.offsetY);
     ctx.scale(this.scale, this.scale);
 
     // 1. Draw Beach & Goal Background
     ctx.drawImage(this.images.bg, 0, 0, this.refWidth, this.refHeight);
 
+    // 1b. Draw coastal wind streaks in the sky if active
+    this.drawWindIndicator(ctx, wind);
+
     // 2. Draw Dynamic Net Ripple Waves over goal opening
     const goalRect = { x: 88, y: 55, width: 1088, height: 490 };
     particles.drawNetRipples(ctx, goalRect);
+
+    // 2b. Draw Level Target Bullseyes in the net
+    this.drawTargets(ctx, targets);
 
     // 3. Draw Goalkeeper Shadow
     this.drawKeeperShadow(ctx, keeper);
@@ -191,6 +232,15 @@ export class GameRenderer {
 
     // 8. Draw Particle Effects (sand puffs, sparks)
     particles.draw(ctx);
+
+    // Subtle sleek boundary glow when letterboxed/pillarboxed
+    if (this.offsetX > 2 || this.offsetY > 2) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(0, 0, this.refWidth, this.refHeight);
+      ctx.restore();
+    }
 
     ctx.restore();
   }
@@ -316,6 +366,93 @@ export class GameRenderer {
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    ctx.restore();
+  }
+
+  // Draw Level Target Bullseyes inside the goal mouth
+  drawTargets(ctx, targets = []) {
+    if (!targets || targets.length === 0) return;
+
+    const time = performance.now() / 1000;
+
+    for (const t of targets) {
+      if (t.hit) continue;
+
+      const pos = this.worldToRef(t.x, t.y, 1.0);
+      const rad = t.radius * 670;
+
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+
+      // Subtle pulse
+      const pulse = 1.0 + Math.sin(time * 3.5 + t.x * 4) * 0.06;
+      ctx.scale(pulse, pulse);
+
+      // Outer gold glowing halo
+      ctx.strokeStyle = "rgba(255, 200, 50, 0.9)";
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = "#ffc83b";
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Translucent target field
+      ctx.fillStyle = "rgba(255, 190, 40, 0.2)";
+      ctx.beginPath();
+      ctx.arc(0, 0, rad, 0, Math.PI * 2);
+      ctx.fill();
+
+      // White inner ring
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(0, 0, rad * 0.62, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Red bullseye core
+      ctx.fillStyle = "#ff4757";
+      ctx.beginPath();
+      ctx.arc(0, 0, rad * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Badge label
+      ctx.font = "800 13px 'Montserrat', sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.8)";
+      ctx.shadowBlur = 5;
+      ctx.fillText(t.label, 0, rad + 14);
+
+      ctx.restore();
+    }
+  }
+
+  // Draw animated coastal wind streaks across the sky
+  drawWindIndicator(ctx, windSpeed) {
+    if (!windSpeed || Math.abs(windSpeed) < 0.05) return;
+
+    const time = performance.now() / 1000;
+    const direction = Math.sign(windSpeed);
+    const speedMag = Math.abs(windSpeed);
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([12, 22]);
+
+    for (let i = 0; i < 3; i++) {
+      const y = 85 + i * 50;
+      const xOffset = ((time * (140 * speedMag) + i * 320)) % (this.refWidth + 240);
+      const startX = direction > 0 ? (xOffset - 120) : (this.refWidth - xOffset + 120);
+
+      ctx.beginPath();
+      ctx.moveTo(startX, y);
+      ctx.lineTo(startX + 130 * direction, y + 6);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }

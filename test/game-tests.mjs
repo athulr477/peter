@@ -129,6 +129,58 @@ const mockParticles = {
   assert(keeper.state === "idle" && keeper.currentPose === "guard", "Keeper returns to idle guard pose after recovery");
 }
 
+// 8. Crosswind Drift Physics Test
+{
+  const ballNoWind = new BallPhysics();
+  const keeper = new Goalkeeper();
+  ballNoWind.shoot(0.0, 0.4, 1.0, 0.0, 0.0);
+  for (let i = 0; i < 10; i++) ballNoWind.update(0.05, keeper, mockParticles, mockAudio);
+
+  const ballWithWind = new BallPhysics();
+  ballWithWind.shoot(0.0, 0.4, 1.0, 0.0, 0.5); // Rightward crosswind
+  for (let i = 0; i < 10; i++) ballWithWind.update(0.05, keeper, mockParticles, mockAudio);
+
+  assert(ballWithWind.x > ballNoWind.x, `Crosswind drifts ball rightward (x: ${ballWithWind.x.toFixed(3)} > ${ballNoWind.x.toFixed(3)})`);
+}
+
+// 9. Bullseye Target Ring Collision Test
+{
+  const ball = new BallPhysics();
+  const keeper = new Goalkeeper();
+  keeper.checkSave = () => false;
+
+  const targetRing = { id: "tr", x: 0.52, y: 0.54, radius: 0.11, points: 500, label: "+500", hit: false };
+  ball.shoot(0.52, 0.54, 1.0, 0.0, 0.0);
+
+  for (let i = 0; i < 20; i++) {
+    ball.update(0.05, keeper, mockParticles, mockAudio, [targetRing]);
+  }
+
+  assert(targetRing.hit === true, "Ball directly on target ring triggers target.hit = true");
+  assert(ball.result.includes("BULLSEYE"), `Result text indicates BULLSEYE hit (got: ${ball.result})`);
+}
+
+// 10. Level Progression & Star Evaluation Test
+{
+  const { LevelManager, LEVELS_DATA } = await import("../js/levels.js");
+  const lm = new LevelManager();
+
+  assert(LEVELS_DATA.length === 6, `Level progression has 6 progressive levels (got: ${LEVELS_DATA.length})`);
+  assert(lm.isUnlocked(1) === true, "Level 1 is unlocked initially");
+  assert(lm.isUnlocked(2) === false, "Level 2 is locked initially");
+
+  // Clear level 1 with 4 goals (3 stars)
+  const evalPass = lm.evaluateResult(4, 0, 4200);
+  assert(evalPass.passed === true, "4 goals on Level 1 passes target");
+  assert(evalPass.stars === 3, `4 goals awards 3 stars (got: ${evalPass.stars})`);
+  assert(lm.isUnlocked(2) === true, "Level 2 unlocked after clearing Level 1");
+
+  // Test failure on level 1
+  lm.setCurrentLevel(1);
+  const evalFail = lm.evaluateResult(1, 0, 1000);
+  assert(evalFail.passed === false, "1 goal fails Level 1 target of 2 goals");
+}
+
 console.log(`=== TEST SUMMARY: ${passed} / ${total} PASSED ===`);
 if (passed === total) {
   process.exit(0);

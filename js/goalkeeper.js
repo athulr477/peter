@@ -2,7 +2,15 @@
 
 export class Goalkeeper {
   constructor() {
+    this.levelConfig = {};
     this.reset();
+  }
+
+  setLevelConfig(config = {}) {
+    this.levelConfig = config;
+    if (config.diveSpeed) this.diveSpeed = config.diveSpeed;
+    if (config.reactionDelay) this.reactionDelay = config.reactionDelay;
+    if (config.reachRadius) this.reachRadius = config.reachRadius;
   }
 
   reset() {
@@ -12,19 +20,21 @@ export class Goalkeeper {
 
     this.targetX = 0;
     this.targetY = 0;
-    this.diveSpeed = 2.4;
+    this.diveSpeed = this.levelConfig.diveSpeed || 2.0;
 
-    this.state = "idle";     // "idle", "anticipating", "reacting", "diving-left", "diving-right", "jumping", "saving", "beaten", "celebrating", "recovering"
+    this.state = "idle";     // "idle", "anticipating", "reacting", "diving-left", "diving-right", "diving-center", "saving", "beaten", "celebrating", "recovering"
     this.currentPose = "guard"; // "guard" or "ready"
 
     this.rotation = 0;       // Body tilt in radians
     this.scale = 1.0;
     this.reactionTimer = 0;
-    this.reactionDelay = 0.16; // Realistic human delay in seconds
+    this.reactionDelay = this.levelConfig.reactionDelay || 0.22; // Realistic human delay in seconds
 
     this.idleTimer = 0;
     this.diveProgress = 0;
-    this.reachRadius = 0.28; // Glove and arm extension reach
+    this.reachRadius = this.levelConfig.reachRadius || 0.17; // Glove and arm extension reach (fair and realistic)
+    this.aiGoalX = 0;
+    this.aiGoalY = 0;
   }
 
   onAimStart() {
@@ -55,29 +65,48 @@ export class Goalkeeper {
     this.targetX = targetWorldX;
     this.targetY = targetWorldY;
 
-    // Reaction delay based on power (harder shots leave less reaction window)
-    this.reactionDelay = Math.max(0.12, 0.22 - power * 0.06);
+    // Reaction delay based on power (harder shots leave less reaction window for keeper)
+    this.reactionDelay = Math.max(0.16, 0.26 - power * 0.06);
     this.reactionTimer = 0;
     this.diveProgress = 0;
 
-    // AI decision: Determine goalkeeper anticipation accuracy
-    // Real beach keepers guess direction with high accuracy, but corner shots are harder to reach
     const roll = Math.random();
-    let diveTargetX = targetWorldX;
-    let diveTargetY = targetWorldY;
+    let diveTargetX = 0;
+    let diveTargetY = targetWorldY * 0.72;
 
-    // 20% chance of guessing wrong side if shot is very wide, or hesitating
-    if (roll < 0.20 && Math.abs(targetWorldX) > 0.35) {
-      // Wrong dive or slow reaction
-      diveTargetX = -targetWorldX * 0.5;
-    } else if (roll < 0.35 && Math.abs(targetWorldX) > 0.45) {
-      // Late dive
-      this.reactionDelay += 0.08;
+    // Realistic penalty shootout goalkeeper decision making:
+    // Real penalty goalkeepers must guess a direction or hold center
+    if (Math.abs(targetWorldX) < 0.22) {
+      // Central shot:
+      // 45% chance keeper gambles and dives toward a post, leaving center open!
+      // 55% chance keeper stays relatively central and saves it
+      if (roll < 0.45) {
+        diveTargetX = (roll < 0.22 ? -1 : 1) * (0.35 + Math.random() * 0.12);
+      } else {
+        diveTargetX = targetWorldX * 0.55;
+      }
+    } else {
+      // Shot aimed towards a side:
+      const targetSide = Math.sign(targetWorldX); // -1 (left) or 1 (right)
+      const wrongChance = this.levelConfig.wrongGuessChance ?? 0.32;
+
+      if (roll < wrongChance) {
+        // Goalkeeper guesses WRONG side! (Dives opposite way -> GOAL!)
+        diveTargetX = -targetSide * (0.32 + Math.random() * 0.15);
+      } else if (roll < wrongChance + 0.20) {
+        // Goalkeeper hesitates / late dive
+        this.reactionDelay += 0.10;
+        diveTargetX = targetSide * (0.28 + Math.random() * 0.14);
+      } else {
+        // Goalkeeper anticipates correct side!
+        // But human dive reach is physically limited - corner shots beat them!
+        diveTargetX = targetSide * Math.min(0.42, Math.abs(targetWorldX) * 0.75);
+      }
     }
 
-    // Clamp dive reach so top corners remain beatable for skillful players!
-    this.aiGoalX = Math.max(-0.58, Math.min(0.58, diveTargetX * 0.9));
-    this.aiGoalY = Math.max(0, Math.min(0.52, diveTargetY * 0.85));
+    // Limit maximum goalkeeper reach so corners and top bins are beatable with good shots!
+    this.aiGoalX = Math.max(-0.44, Math.min(0.44, diveTargetX));
+    this.aiGoalY = Math.max(0, Math.min(0.45, diveTargetY));
   }
 
   update(dt) {
@@ -95,29 +124,26 @@ export class Goalkeeper {
       this.reactionTimer += dt;
       if (this.reactionTimer >= this.reactionDelay) {
         // Start diving
-        if (this.aiGoalX < -0.15) {
+        if (this.aiGoalX < -0.12) {
           this.state = "diving-left";
-        } else if (this.aiGoalX > 0.15) {
+        } else if (this.aiGoalX > 0.12) {
           this.state = "diving-right";
-        } else if (this.aiGoalY > 0.35) {
-          this.state = "jumping";
         } else {
           this.state = "diving-center";
         }
       }
-    } else if (this.state.startsWith("diving") || this.state === "jumping") {
+    } else if (this.state.startsWith("diving")) {
       this.diveProgress = Math.min(1.0, this.diveProgress + dt * this.diveSpeed);
 
       // Move toward target position
-      const ease = 1 - Math.pow(1 - this.diveProgress, 3);
-      this.x = this.x + (this.aiGoalX - this.x) * (dt * 6.5);
+      this.x = this.x + (this.aiGoalX - this.x) * (dt * 5.8);
       this.y = Math.max(0, this.aiGoalY * Math.sin(this.diveProgress * Math.PI));
 
       // Tilt body according to dive direction
       if (this.aiGoalX < -0.1) {
-        this.rotation = -0.45 * Math.sin(this.diveProgress * Math.PI * 0.8);
+        this.rotation = -0.42 * Math.sin(this.diveProgress * Math.PI * 0.8);
       } else if (this.aiGoalX > 0.1) {
-        this.rotation = 0.45 * Math.sin(this.diveProgress * Math.PI * 0.8);
+        this.rotation = 0.42 * Math.sin(this.diveProgress * Math.PI * 0.8);
       } else {
         this.rotation = 0;
       }
@@ -147,9 +173,9 @@ export class Goalkeeper {
   checkSave(ballX, ballY) {
     // Current keeper center in world units
     const kx = this.x;
-    const ky = this.y + 0.28; // Glove center height above ground
+    const ky = this.y + 0.24; // Glove center height above ground
 
-    // Reach ellipse: keeper has horizontal reach from arms, plus vertical reach
+    // Reach ellipse: glove/arm reach
     const dx = (ballX - kx) / this.reachRadius;
     const dy = (ballY - ky) / (this.reachRadius * 1.25);
     const distSq = dx * dx + dy * dy;

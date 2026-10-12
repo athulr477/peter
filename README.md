@@ -25,18 +25,26 @@ Inspired by beach soccer penalty challenges, players aim and swipe to shoot a cl
    - Fair and balanced: top corners and misdirected dives reward skillful player shots, while center or predictable shots get saved.
    - Cylinder-intersection collision for posts and crossbars (`OFF THE POST!`, `OFF THE BAR!`).
 
-4. **Tournament 5-Round Shootout System**:
-   - Real-time HUD: Score counter, Round indicator (`1/5` to `5/5`), and 5 attempt dots (⚽ for goal, ❌ for save/miss, glowing dot for current).
-   - Dynamic popup banners: `GOAL!`, `SAVED!`, `OFF THE POST!`, `WIDE!`, `OVER THE BAR!`.
-   - Post-match Round Summary modal with accuracy stats, trophy rating, and **PLAY AGAIN** restart.
+4. **Mobile 6-Level Campaign & Progression System**:
+   - **Progressive Difficulty**: 6 unique, handcrafted levels featuring progressive target goals, goalkeeper AI adaptations, and star ratings (⭐ to ⭐⭐⭐).
+     - **Level 1: Rookie Warmup** 🏖️ — Target: 2/5 goals. Beginner goalkeeper with relaxed reflexes.
+     - **Level 2: Corner Specialist** 🎯 — Target: 3/5 goals. Introduces glowing corner bullseye targets (`+500` bonus points)!
+     - **Level 3: Coastal Crosswind** 💨 — Target: 3/5 goals. Active lateral wind drift (`12 km/h ➔`) requiring shot compensation.
+     - **Level 4: Precision Master** ⚡ — Target: 4/5 goals. Gusty ocean winds with high-value corner rings.
+     - **Level 5: Beach Championship** 🏆 — Target: 4/5 goals. Strong coastal wind gusts and elite championship goalkeeper.
+     - **Level 6: Golden Boot Legend** 👑 — Target: 5/5 goals. Flawless shootout challenge with 3 bonus bullseyes.
+   - **Level Select Screen**: Interactive grid showing level details, requirements, wind conditions, and unlocked state.
+   - **Star Rating & Persistence**: Earn up to 3 stars per level with automatic save/load via `localStorage`.
+   - **Victory & Failure Screens**: Animated star pops, stat breakdown, and **NEXT LEVEL** progression.
 
 5. **Self-Contained Web Audio Synthesizer**:
-   - Built-in Web Audio API: Punchy boot kick, ball flight whoosh, iron post clang, glove save thud, net ripple, referee whistles, and crowd cheering roar.
+   - Built-in Web Audio API: Punchy boot kick, ball flight whoosh, iron post clang, glove save thud, net ripple, target ring bell chime, star reveal notes, victory fanfares, and crowd cheering roar.
    - Sound toggle button (`ON` / `OFF`).
 
-6. **Pause Menu & Responsive High-DPI Canvas**:
-   - Pause button in upper right corner with `RESUME`, `RESTART ROUND`, and `SOUND` controls.
-   - Responsive aspect ratio scaling supporting desktop monitors, tablets, and mobile screens in both portrait and landscape.
+6. **Mobile-First Responsive Layout & Quick Controls**:
+   - Dedicated Quick Restart button `🔄` in top HUD (or press `R`).
+   - Quick Level Select button `📋` (or press `L`).
+   - Dynamic containment (`Math.min` contain scaling) ensuring 100% of the game area is always visible on all mobile phones, tablets, and desktop displays with zero cropping.
 
 ---
 
@@ -66,7 +74,7 @@ Run the included automated physics and AI test suite:
 ```bash
 node test/game-tests.mjs
 ```
-Runs 13 deterministic tests covering:
+Runs 23 deterministic tests covering:
 - Goal scoring within post boundaries
 - Goalkeeper glove interception and save detection
 - Left post cylinder deflection (`OFF THE POST!`)
@@ -74,6 +82,9 @@ Runs 13 deterministic tests covering:
 - Over-the-bar elevation check
 - Wide trajectory check
 - Complete goalkeeper state machine and dive kinematics
+- Crosswind lateral drift physics
+- Bullseye target ring collision detection and bonus result
+- Level progression, unlocking rules, and 3-star rating evaluation
 
 ---
 
