@@ -8,8 +8,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d111a">
   <meta name="format-detection" content="telephone=no">
-  <title>Beach Penalty Shootout — Real Swipe Challenge</title>
-  <meta name="description" content="Realistic beach soccer penalty shootout game. Swipe to curve, dip, and shoot past the beach goalkeeper into the rusty goal!">
+  <title>Beach Penalty Shootout</title>
+  <meta name="description" content="Realistic beach soccer penalty shootout game. Swipe to score goals past the keeper!">
   <meta name="application-name" content="Beach Penalty">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
@@ -22,182 +22,26 @@
 </head>
 <body>
   <div id="gameContainer" class="game-container">
-    <!-- Main 2D Canvas -->
+    <!-- Main 2D Canvas: 100% visible net, keeper, beach, ball -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Top HUD Overlay -->
-    <header id="gameHUD" class="hud-layer">
-      <!-- Left Group: Score & Target -->
-      <div class="hud-left-group">
-        <div class="hud-card score-box">
-          <span class="hud-label">SCORE</span>
-          <span id="scoreValue" class="hud-number">0</span>
-          <div id="attemptIndicators" class="attempt-indicators">
-            <div class="attempt-dot current"></div>
-            <div class="attempt-dot"></div>
-            <div class="attempt-dot"></div>
-            <div class="attempt-dot"></div>
-            <div class="attempt-dot"></div>
-          </div>
-        </div>
-        <div class="hud-card target-box">
-          <span class="hud-label">TARGET</span>
-          <span id="targetValue" class="hud-target-num">2 GOALS</span>
-        </div>
-      </div>
-
-      <!-- Center Group: Level Badge & Wind -->
-      <div class="hud-center-group">
-        <button id="levelBadgeBtn" class="hud-card level-badge-card" aria-label="Select Level" title="Select Level">
-          <span class="hud-label">LEVEL <span id="hudLevelNum">1</span></span>
-          <span id="hudLevelName" class="hud-level-title">ROOKIE WARMUP</span>
-          <div id="hudLevelStars" class="hud-mini-stars">★★★</div>
-        </button>
-        <div id="hudWindWidget" class="hud-wind-widget hidden">
-          <span class="wind-icon">💨</span>
-          <span id="hudWindText" class="wind-text">12 km/h ➔</span>
-        </div>
-      </div>
-
-      <!-- Right Group: Kick + Level Select + Restart + Pause Controls -->
-      <div class="hud-right-group">
-        <div class="hud-card round-box">
-          <span class="hud-label">KICK</span>
-          <span id="roundValue" class="hud-number">1/5</span>
-        </div>
-        <button id="openLevelSelectBtn" class="hud-btn levels-btn" aria-label="Level Select" title="Level Select">
-          <span class="btn-icon">📋</span>
-        </button>
-        <button id="quickRestartBtn" class="hud-btn restart-btn" aria-label="Restart Round" title="Restart Round (R)">
-          <span class="restart-icon">🔄</span>
-        </button>
-        <button id="pauseBtn" class="hud-btn pause-btn" aria-label="Pause Game" title="Pause Game (Esc)">
-          <span class="pause-icon"></span>
-        </button>
-      </div>
-    </header>
-
-    <!-- Swipe-to-Shoot Tutorial (Lower Right) -->
-    <aside id="swipeTutorial" class="swipe-tutorial">
-      <div class="tutorial-graphic">
-        <div class="tutorial-arrow"></div>
-        <div class="tutorial-hand">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="hand-svg">
-            <path d="M18 10V26C18 27.1 18.9 28 20 28C21.1 28 22 27.1 22 26V8C22 6.9 22.9 6 24 6C25.1 6 26 6.9 26 8V26C26 27.1 26.9 28 28 28C29.1 28 30 27.1 30 26V12C30 10.9 30.9 10 32 10C33.1 10 34 10.9 34 12V28.5C34 35.4 28.4 41 21.5 41C16.8 41 12.7 38.3 10.7 34.2L6.8 26.3C6.3 25.3 6.6 24.1 7.5 23.4C8.5 22.7 9.8 22.9 10.6 23.8L14 27.6V6C14 4.9 14.9 4 16 4C17.1 4 18 4.9 18 6V10Z" fill="white" stroke="#111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-      </div>
-      <div class="tutorial-badge">
-        <span class="tutorial-text">SWIPE TO CORNERS TO SCORE!</span>
-      </div>
-    </aside>
-
-    <!-- Shot Result Popup Banner -->
+    <!-- Shot Result Popup Banner (momentarily displays GOAL!, SAVED!, etc.) -->
     <div id="resultBanner" class="result-banner hidden">
-      <span id="resultText" class="result-text">GOAL!</span>
+      <span id="resultText" class="result-text">⚽ GOAL!</span>
     </div>
 
-    <!-- Level Select Modal -->
-    <div id="levelSelectModal" class="modal-backdrop hidden">
-      <div class="modal-card level-select-card">
-        <div class="modal-header-row">
-          <h2 class="modal-title">SELECT LEVEL</h2>
-          <button id="closeLevelSelectBtn" class="close-modal-btn" aria-label="Close Level Select">✕</button>
-        </div>
-        <div class="total-stars-badge">
-          <span class="star-icon">⭐</span>
-          <span id="totalStarsCount">0</span> / 18 STARS EARNED
-        </div>
-        <div id="levelsGrid" class="levels-grid">
-          <!-- Populated dynamically via LevelManager -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Level Result Modal (Cleared / Failed) -->
-    <div id="levelResultModal" class="modal-backdrop hidden">
-      <div class="modal-card level-result-card">
-        <div id="resultTrophyIcon" class="result-hero-icon">🏆</div>
-        <h2 id="resultHeaderTitle" class="modal-title">LEVEL CLEARED!</h2>
-        <p id="resultLevelSub" class="level-sub-title">LEVEL 1: ROOKIE WARMUP</p>
-
-        <!-- 3-Star Rating Animation -->
-        <div class="star-rating-container">
-          <div id="star1" class="result-star">★</div>
-          <div id="star2" class="result-star">★</div>
-          <div id="star3" class="result-star">★</div>
-        </div>
-
-        <div class="result-stats-card">
-          <div class="stat-row">
-            <span>Goals Scored:</span>
-            <strong id="resGoalsText">3 / 5</strong>
-          </div>
-          <div class="stat-row">
-            <span>Target Goal:</span>
-            <strong id="resTargetText">2 Goals</strong>
-          </div>
-          <div id="resTargetHitsRow" class="stat-row hidden">
-            <span>🎯 Bullseyes Hit:</span>
-            <strong id="resTargetHitsText">0</strong>
-          </div>
-          <div class="stat-row total-score-row">
-            <span>Level Score:</span>
-            <strong id="resPointsText">3,000 PTS</strong>
-          </div>
-        </div>
-
-        <div class="result-actions">
-          <button id="nextLevelBtn" class="btn btn-primary btn-large">
-            NEXT LEVEL ➔
-          </button>
-          <button id="retryLevelBtn" class="btn btn-secondary">
-            <span class="btn-icon">🔄</span> RETRY
-          </button>
-          <button id="openLevelsFromResultsBtn" class="btn btn-tertiary">
-            <span class="btn-icon">📋</span> LEVEL SELECT
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pause Menu Modal -->
-    <div id="pauseModal" class="modal-backdrop hidden">
-      <div class="modal-card">
-        <h2 class="modal-title">GAME PAUSED</h2>
-        <div class="modal-buttons">
-          <button id="resumeBtn" class="btn btn-primary">
-            <span class="btn-icon">▶</span> RESUME
-          </button>
-          <button id="pauseLevelSelectBtn" class="btn btn-secondary">
-            <span class="btn-icon">📋</span> LEVEL SELECT
-          </button>
-          <button id="soundToggleBtn" class="btn btn-secondary">
-            <span id="soundIcon" class="btn-icon">🔊</span>
-            <span class="label">SOUND: ON</span>
-          </button>
-          <button id="restartBtn" class="btn btn-tertiary">
-            <span class="btn-icon">🔄</span> RESTART LEVEL
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Round Summary / Game Over Modal (Fallback) -->
-    <div id="summaryModal" class="modal-backdrop hidden">
-      <div class="modal-card summary-card">
-        <div class="summary-trophy">🏆</div>
-        <h2 class="modal-title">ROUND FINISHED</h2>
+    <!-- Game Over Modal with Working RESTART Button -->
+    <div id="gameOverModal" class="modal-backdrop hidden">
+      <div class="modal-card game-over-card">
+        <div id="gameOverIcon" class="summary-trophy">🏆</div>
+        <h2 id="gameOverTitle" class="modal-title">ROUND FINISHED</h2>
         <div class="summary-score-box">
-          <span class="score-caption">FINAL SCORE</span>
-          <span id="summaryScore" class="final-score">0 / 5</span>
+          <span class="score-caption">GOALS SCORED</span>
+          <span id="gameOverScoreText" class="final-score">0 / 5</span>
         </div>
-        <p id="summaryRating" class="summary-rating">BEACH LEGEND!</p>
-        <div id="summaryDetails" class="summary-stats">
-          <!-- Populated dynamically -->
-        </div>
-        <button id="playAgainBtn" class="btn btn-primary btn-large">
-          <span class="btn-icon">⚽</span> PLAY AGAIN
+        <p id="gameOverRating" class="summary-rating">BEACH LEGEND!</p>
+        <button id="gameOverRestartBtn" class="btn btn-primary btn-large restart-main-btn" aria-label="Restart Game">
+          <span class="btn-icon">🔄</span> RESTART
         </button>
       </div>
     </div>

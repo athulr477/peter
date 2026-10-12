@@ -1,7 +1,7 @@
 // Beach Penalty Shootout — Service Worker
-// Provides full offline play, instant loading, and asset caching
+// Instant auto-refresh on updates + full offline play
 
-const CACHE_NAME = "beach-penalty-v1";
+const CACHE_NAME = "beach-penalty-v3";
 
 const CORE_ASSETS = [
   "./",
@@ -26,7 +26,7 @@ const CORE_ASSETS = [
   "./assets/favicon.png"
 ];
 
-// Install: precache core game files
+// Install: precache core game files & skipWaiting immediately
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -39,7 +39,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate: delete outdated caches
+// Activate: clean up older cache versions & claim clients
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -56,7 +56,9 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch: cache-first for assets & audio; network-first for navigation
+// Fetch handler:
+// Network-first for JavaScript, CSS, and HTML navigation (ensures instant Vercel updates!)
+// Cache-first for large media images
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -84,23 +86,37 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // HTML navigation: network-first, fallback to cached index.html
-  if (req.mode === "navigate") {
+  // Code files (.js, .css, HTML): NETWORK-FIRST for instant deployment refresh
+  const isCode = req.mode === "navigate" ||
+                 url.pathname.endsWith(".js") ||
+                 url.pathname.endsWith(".css") ||
+                 url.pathname.endsWith(".html") ||
+                 url.pathname === "/";
+
+  if (isCode) {
     event.respondWith(
       fetch(req)
         .then((networkResponse) => {
-          const cloned = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, cloned));
+          if (networkResponse && networkResponse.status === 200) {
+            const cloned = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, cloned));
+          }
           return networkResponse;
         })
         .catch(() => {
-          return caches.match("./index.html") || caches.match("/");
+          return caches.match(req).then((cached) => {
+            if (cached) return cached;
+            if (req.mode === "navigate") {
+              return caches.match("./index.html") || caches.match("/");
+            }
+            return null;
+          });
         })
     );
     return;
   }
 
-  // Local static game assets: Cache-first, fallback to network
+  // Static media assets (/assets/ images, audio): Cache-first with network fallback
   event.respondWith(
     caches.match(req).then((cachedResponse) => {
       if (cachedResponse) {

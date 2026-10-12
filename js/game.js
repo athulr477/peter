@@ -43,52 +43,14 @@ export class BeachPenaltyGame {
 
     // DOM UI elements
     this.ui = {
-      scoreValue: document.getElementById("scoreValue"),
-      roundValue: document.getElementById("roundValue"),
-      targetValue: document.getElementById("targetValue"),
-      attemptIndicators: document.getElementById("attemptIndicators"),
-      hudLevelNum: document.getElementById("hudLevelNum"),
-      hudLevelName: document.getElementById("hudLevelName"),
-      hudLevelStars: document.getElementById("hudLevelStars"),
-      levelBadgeBtn: document.getElementById("levelBadgeBtn"),
-      hudWindWidget: document.getElementById("hudWindWidget"),
-      hudWindText: document.getElementById("hudWindText"),
-      tutorial: document.getElementById("swipeTutorial"),
       resultBanner: document.getElementById("resultBanner"),
       resultText: document.getElementById("resultText"),
-      openLevelSelectBtn: document.getElementById("openLevelSelectBtn"),
-      pauseBtn: document.getElementById("pauseBtn"),
-      quickRestartBtn: document.getElementById("quickRestartBtn"),
-      pauseModal: document.getElementById("pauseModal"),
-      resumeBtn: document.getElementById("resumeBtn"),
-      pauseLevelSelectBtn: document.getElementById("pauseLevelSelectBtn"),
-      restartBtn: document.getElementById("restartBtn"),
-      soundToggleBtn: document.getElementById("soundToggleBtn"),
-      soundIcon: document.getElementById("soundIcon"),
-      summaryModal: document.getElementById("summaryModal"),
-      summaryScore: document.getElementById("summaryScore"),
-      summaryRating: document.getElementById("summaryRating"),
-      summaryDetails: document.getElementById("summaryDetails"),
-      playAgainBtn: document.getElementById("playAgainBtn"),
-      levelSelectModal: document.getElementById("levelSelectModal"),
-      closeLevelSelectBtn: document.getElementById("closeLevelSelectBtn"),
-      totalStarsCount: document.getElementById("totalStarsCount"),
-      levelsGrid: document.getElementById("levelsGrid"),
-      levelResultModal: document.getElementById("levelResultModal"),
-      resultTrophyIcon: document.getElementById("resultTrophyIcon"),
-      resultHeaderTitle: document.getElementById("resultHeaderTitle"),
-      resultLevelSub: document.getElementById("resultLevelSub"),
-      star1: document.getElementById("star1"),
-      star2: document.getElementById("star2"),
-      star3: document.getElementById("star3"),
-      resGoalsText: document.getElementById("resGoalsText"),
-      resTargetText: document.getElementById("resTargetText"),
-      resTargetHitsRow: document.getElementById("resTargetHitsRow"),
-      resTargetHitsText: document.getElementById("resTargetHitsText"),
-      resPointsText: document.getElementById("resPointsText"),
-      nextLevelBtn: document.getElementById("nextLevelBtn"),
-      retryLevelBtn: document.getElementById("retryLevelBtn"),
-      openLevelsFromResultsBtn: document.getElementById("openLevelsFromResultsBtn"),
+      gameOverModal: document.getElementById("gameOverModal"),
+      gameOverIcon: document.getElementById("gameOverIcon"),
+      gameOverTitle: document.getElementById("gameOverTitle"),
+      gameOverScoreText: document.getElementById("gameOverScoreText"),
+      gameOverRating: document.getElementById("gameOverRating"),
+      gameOverRestartBtn: document.getElementById("gameOverRestartBtn"),
       loadingOverlay: document.getElementById("loadingOverlay"),
       loadingBar: document.getElementById("loadingBar"),
     };
@@ -206,104 +168,22 @@ export class BeachPenaltyGame {
   }
 
   setupUI() {
-    // Pause button & modal
-    this.ui.pauseBtn.addEventListener("click", () => this.pauseGame());
-    this.ui.resumeBtn.addEventListener("click", () => this.resumeGame());
-    this.ui.restartBtn.addEventListener("click", () => {
-      this.resumeGame();
-      this.resetRound();
-    });
-
-    // Quick restart button (HUD)
-    if (this.ui.quickRestartBtn) {
-      this.ui.quickRestartBtn.addEventListener("click", () => {
-        if (this.state === "PAUSED") this.resumeGame();
+    // Restart button in Game Over modal
+    if (this.ui.gameOverRestartBtn) {
+      this.ui.gameOverRestartBtn.addEventListener("click", () => {
         this.resetRound();
       });
     }
 
-    // Level Badge Button opens Level Select
-    if (this.ui.levelBadgeBtn) {
-      this.ui.levelBadgeBtn.addEventListener("click", () => {
-        this.openLevelSelectModal();
-      });
-    }
-
-    // Open Level Select Button (HUD)
-    if (this.ui.openLevelSelectBtn) {
-      this.ui.openLevelSelectBtn.addEventListener("click", () => {
-        this.openLevelSelectModal();
-      });
-    }
-
-    if (this.ui.pauseLevelSelectBtn) {
-      this.ui.pauseLevelSelectBtn.addEventListener("click", () => {
-        this.ui.pauseModal.classList.add("hidden");
-        this.openLevelSelectModal();
-      });
-    }
-
-    if (this.ui.closeLevelSelectBtn) {
-      this.ui.closeLevelSelectBtn.addEventListener("click", () => {
-        this.closeLevelSelectModal();
-      });
-    }
-
-    // Level Result Modal Actions
-    if (this.ui.nextLevelBtn) {
-      this.ui.nextLevelBtn.addEventListener("click", () => {
-        const nextId = this.levelManager.getNextLevelId();
-        if (nextId) {
-          this.ui.levelResultModal.classList.add("hidden");
-          this.loadLevel(nextId);
-        }
-      });
-    }
-
-    if (this.ui.retryLevelBtn) {
-      this.ui.retryLevelBtn.addEventListener("click", () => {
-        this.ui.levelResultModal.classList.add("hidden");
-        this.resetRound();
-      });
-    }
-
-    if (this.ui.openLevelsFromResultsBtn) {
-      this.ui.openLevelsFromResultsBtn.addEventListener("click", () => {
-        this.ui.levelResultModal.classList.add("hidden");
-        this.openLevelSelectModal();
-      });
-    }
-
-    // Keyboard shortcuts
+    // Keyboard shortcuts: R to restart anytime
     window.addEventListener("keydown", (e) => {
       if (e.key === "r" || e.key === "R") {
-        if (this.state === "PAUSED") this.resumeGame();
         this.resetRound();
-      } else if (e.key === "Escape" || e.key === "p" || e.key === "P") {
-        if (this.state === "PAUSED") {
-          this.resumeGame();
-        } else if (this.state === "READY" || this.state === "AIMING") {
-          this.pauseGame();
-        }
-      } else if (e.key === "l" || e.key === "L") {
-        this.openLevelSelectModal();
       }
     });
 
-    // Sound toggle
-    this.ui.soundToggleBtn.addEventListener("click", () => {
-      const isMuted = audio.toggleMute();
-      this.updateSoundIcon(isMuted);
-    });
-
-    // Play Again button (legacy summary)
-    this.ui.playAgainBtn.addEventListener("click", () => {
-      this.ui.summaryModal.classList.add("hidden");
-      this.resetRound();
-    });
-
     // Prevent double-tap zoom on buttons
-    document.querySelectorAll(".btn, .hud-btn, .close-modal-btn").forEach((btn) => {
+    document.querySelectorAll(".btn, .restart-main-btn").forEach((btn) => {
       btn.style.touchAction = "manipulation";
     });
   }
@@ -423,12 +303,11 @@ export class BeachPenaltyGame {
     if (this.currentAttempt >= this.maxAttempts) {
       // Level Round Finished
       this.state = "ROUND_OVER";
-      const evalRes = this.levelManager.evaluateResult(this.goals, this.targetsHitCount, this.levelScore);
-      this.showLevelResultModal(evalRes);
+      this.showGameOverModal();
       return;
     }
 
-    // Next kick in current level
+    // Next kick in current round
     this.currentAttempt++;
     this.ball.reset();
     this.keeper.startRecovery();
@@ -450,6 +329,7 @@ export class BeachPenaltyGame {
     const lvl = this.levelManager.getCurrentLevel();
     this.activeTargets = lvl.targets ? lvl.targets.map((t) => ({ ...t, hit: false })) : [];
 
+    if (this.ui.gameOverModal) this.ui.gameOverModal.classList.add("hidden");
     if (this.ui.pauseModal) this.ui.pauseModal.classList.add("hidden");
     if (this.ui.summaryModal) this.ui.summaryModal.classList.add("hidden");
     if (this.ui.levelResultModal) this.ui.levelResultModal.classList.add("hidden");
@@ -466,175 +346,56 @@ export class BeachPenaltyGame {
   }
 
   updateHUD() {
-    const lvl = this.levelManager.getCurrentLevel();
-
-    this.ui.scoreValue.textContent = this.levelScore.toLocaleString();
-    this.ui.roundValue.textContent = `${this.currentAttempt}/${this.maxAttempts}`;
-    this.ui.targetValue.textContent = `${this.goals}/${lvl.targetGoals} REQ`;
-
-    if (this.ui.hudLevelNum) this.ui.hudLevelNum.textContent = lvl.id;
-    if (this.ui.hudLevelName) this.ui.hudLevelName.textContent = lvl.name;
-
-    // Mini stars for current level
-    if (this.ui.hudLevelStars) {
-      const stars = this.levelManager.getStarsEarned(lvl.id);
-      let starsStr = "";
-      for (let s = 1; s <= 3; s++) {
-        starsStr += s <= stars ? "★" : "☆";
-      }
-      this.ui.hudLevelStars.textContent = starsStr;
-    }
-
-    // Wind Widget
-    if (this.ui.hudWindWidget) {
-      if (Math.abs(this.wind) > 0.05) {
-        this.ui.hudWindWidget.classList.remove("hidden");
-        this.ui.hudWindText.textContent = lvl.windLabel;
-      } else {
-        this.ui.hudWindWidget.classList.add("hidden");
-      }
-    }
-
-    // 5 attempt indicator dots
-    this.ui.attemptIndicators.innerHTML = "";
-    for (let i = 1; i <= this.maxAttempts; i++) {
-      const dot = document.createElement("div");
-      dot.className = "attempt-dot";
-
-      const past = this.history.find((h) => h.attempt === i);
-      if (past) {
-        if (past.result.includes("GOAL") || past.result.includes("BULLSEYE")) {
-          dot.classList.add("goal");
-          dot.textContent = "⚽";
-        } else {
-          dot.classList.add("miss");
-          dot.textContent = "❌";
-        }
-      } else if (i === this.currentAttempt) {
-        dot.classList.add("current");
-      }
-      this.ui.attemptIndicators.appendChild(dot);
-    }
+    if (this.ui.scoreValue) this.ui.scoreValue.textContent = this.levelScore.toLocaleString();
+    if (this.ui.roundValue) this.ui.roundValue.textContent = `${this.currentAttempt}/${this.maxAttempts}`;
+    if (this.ui.targetValue) this.ui.targetValue.textContent = `${this.goals} GOALS`;
   }
 
-  showLevelResultModal(evalRes) {
-    const modal = this.ui.levelResultModal;
+  showGameOverModal() {
+    const modal = this.ui.gameOverModal;
+    if (!modal) return;
     modal.classList.remove("hidden");
 
-    this.ui.resultLevelSub.textContent = `LEVEL ${evalRes.levelId}: ${evalRes.levelName}`;
-    this.ui.resGoalsText.textContent = `${evalRes.goalsScored} / ${evalRes.maxAttempts}`;
-    this.ui.resTargetText.textContent = `${evalRes.targetGoals} Goals`;
-    this.ui.resPointsText.textContent = `${evalRes.totalPoints.toLocaleString()} PTS`;
-
-    if (evalRes.targetsHitCount > 0) {
-      this.ui.resTargetHitsRow.classList.remove("hidden");
-      this.ui.resTargetHitsText.textContent = `${evalRes.targetsHitCount}`;
-    } else {
-      this.ui.resTargetHitsRow.classList.add("hidden");
+    if (this.ui.gameOverScoreText) {
+      this.ui.gameOverScoreText.textContent = `${this.goals} / ${this.maxAttempts}`;
     }
 
-    // Star elements reset
-    [this.ui.star1, this.ui.star2, this.ui.star3].forEach((star) => {
-      star.className = "result-star";
-    });
-
-    if (evalRes.passed) {
-      this.ui.resultTrophyIcon.textContent = "🏆";
-      this.ui.resultHeaderTitle.textContent = "LEVEL CLEARED! 🌟";
-      this.ui.resultHeaderTitle.style.color = "var(--color-gold)";
-
-      // Sound
-      audio.playLevelWin();
-
-      // Show Next Level button if next level exists
-      if (evalRes.hasNextLevel) {
-        this.ui.nextLevelBtn.style.display = "flex";
+    if (this.ui.gameOverRating) {
+      if (this.goals >= 5) {
+        this.ui.gameOverRating.textContent = "PERFECT 5/5! BEACH LEGEND! 🌟";
+      } else if (this.goals >= 4) {
+        this.ui.gameOverRating.textContent = "FANTASTIC SHOOTING! ⚽";
+      } else if (this.goals >= 3) {
+        this.ui.gameOverRating.textContent = "GREAT GOALSCORER! 🎯";
+      } else if (this.goals >= 1) {
+        this.ui.gameOverRating.textContent = "GOOD EFFORT! KEEP GOING! 💪";
       } else {
-        this.ui.nextLevelBtn.style.display = "none";
+        this.ui.gameOverRating.textContent = "TRY AGAIN! YOU CAN DO IT! 🏖️";
       }
+    }
 
-      // Animate earned stars sequentially
-      for (let s = 1; s <= evalRes.stars; s++) {
-        setTimeout(() => {
-          const starEl = this.ui[`star${s}`];
-          if (starEl) {
-            starEl.classList.add("earned");
-            audio.playStarReveal(s);
-          }
-        }, 350 * s);
-      }
+    if (this.goals >= 3) {
+      audio.playLevelWin();
     } else {
-      this.ui.resultTrophyIcon.textContent = "💔";
-      this.ui.resultHeaderTitle.textContent = "LEVEL FAILED";
-      this.ui.resultHeaderTitle.style.color = "#ff4757";
-
-      audio.playLevelFail();
-      this.ui.nextLevelBtn.style.display = "none";
+      audio.playWhistle();
     }
   }
 
+
   openLevelSelectModal() {
+    if (!this.ui.levelSelectModal) return;
     if (this.state === "READY" || this.state === "AIMING") {
       this.input.setEnabled(false);
     }
 
     const modal = this.ui.levelSelectModal;
     modal.classList.remove("hidden");
-
-    this.ui.totalStarsCount.textContent = this.levelManager.getTotalStars();
-
-    const levels = this.levelManager.getAllLevels();
-    const grid = this.ui.levelsGrid;
-    grid.innerHTML = "";
-
-    levels.forEach((lvl) => {
-      const card = document.createElement("div");
-      card.className = "level-card";
-      if (!lvl.isUnlocked) card.classList.add("locked");
-      if (lvl.id === this.levelManager.currentLevelId) card.classList.add("active-level");
-
-      // Stars string
-      let starsHtml = "";
-      for (let i = 1; i <= 3; i++) {
-        if (i <= lvl.starsEarned) {
-          starsHtml += "<span>★</span>";
-        } else {
-          starsHtml += "<span class='empty-star'>★</span>";
-        }
-      }
-
-      // Meta pills
-      let metaHtml = `<span class="meta-pill">🎯 Goal: ${lvl.targetGoals}/5</span>`;
-      if (lvl.targets && lvl.targets.length > 0) {
-        metaHtml += `<span class="meta-pill pill-target">Bullseyes (${lvl.targets.length})</span>`;
-      }
-      if (Math.abs(lvl.wind) > 0.05) {
-        metaHtml += `<span class="meta-pill pill-wind">💨 ${lvl.windLabel}</span>`;
-      }
-
-      card.innerHTML = `
-        <div class="level-card-top">
-          <span class="level-num-badge">LEVEL ${lvl.id}</span>
-          <div class="level-stars-row">${starsHtml}</div>
-        </div>
-        <div class="level-card-name">${lvl.icon} ${lvl.name} ${!lvl.isUnlocked ? "🔒" : ""}</div>
-        <p class="level-card-desc">${lvl.subtitle}</p>
-        <div class="level-card-meta">${metaHtml}</div>
-      `;
-
-      if (lvl.isUnlocked) {
-        card.addEventListener("click", () => {
-          this.closeLevelSelectModal();
-          this.loadLevel(lvl.id);
-        });
-      }
-
-      grid.appendChild(card);
-    });
   }
 
   closeLevelSelectModal() {
-    this.ui.levelSelectModal.classList.add("hidden");
+    if (this.ui.levelSelectModal) {
+      this.ui.levelSelectModal.classList.add("hidden");
+    }
     if (this.state === "READY" || this.state === "AIMING") {
       this.input.setEnabled(true);
     }
@@ -645,7 +406,9 @@ export class BeachPenaltyGame {
     this.savedStateBeforePause = this.state;
     this.state = "PAUSED";
     this.input.setEnabled(false);
-    this.ui.pauseModal.classList.remove("hidden");
+    if (this.ui.pauseModal) {
+      this.ui.pauseModal.classList.remove("hidden");
+    }
   }
 
   resumeGame() {
@@ -654,7 +417,9 @@ export class BeachPenaltyGame {
     if (this.state === "READY" || this.state === "AIMING") {
       this.input.setEnabled(true);
     }
-    this.ui.pauseModal.classList.add("hidden");
+    if (this.ui.pauseModal) {
+      this.ui.pauseModal.classList.add("hidden");
+    }
     this.lastTime = performance.now();
   }
 

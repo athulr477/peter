@@ -736,6 +736,44 @@ html, body {
 }
 
 /* ========================================================
+   GAME OVER MODAL & RESTART BUTTON
+   ======================================================== */
+.game-over-card {
+  max-width: 380px;
+  width: 88%;
+  padding: 32px 28px;
+  text-align: center;
+  background: rgba(16, 22, 34, 0.96);
+  border: 1.5px solid rgba(255, 200, 59, 0.35);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.75), 0 0 35px rgba(255, 200, 59, 0.18);
+  border-radius: 22px;
+}
+
+.restart-main-btn {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #ffc83b 0%, #ff8c00 100%);
+  color: #0d121c;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  padding: 16px 24px;
+  border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.45);
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.restart-main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 140, 0, 0.65);
+}
+
+.restart-main-btn:active {
+  transform: scale(0.97);
+}
+
+/* ========================================================
    LEVEL SELECT MODAL & CARDS
    ======================================================== */
 .level-select-card {

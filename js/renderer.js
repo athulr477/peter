@@ -170,29 +170,62 @@ export class GameRenderer {
     const ctx = this.ctx;
     ctx.save();
 
-    // 0. Base dark backdrop
-    ctx.fillStyle = "#0c1017";
+    // 0. Base coastal stadium backdrop
+    ctx.fillStyle = "#111824";
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // 0b. If letterboxed or pillarboxed, draw ambient atmospheric backdrop
-    if (this.offsetX > 0 || this.offsetY > 0) {
-      const coverScale = Math.max(this.canvas.width / this.refWidth, this.canvas.height / this.refHeight);
-      const coverW = this.refWidth * coverScale;
-      const coverH = this.refHeight * coverScale;
-      const coverX = (this.canvas.width - coverW) / 2;
-      const coverY = (this.canvas.height - coverH) / 2;
+    // 0b. If letterboxed (tall phone/portrait) or pillarboxed (ultrawide), draw seamless sky & sand extensions
+    if (this.offsetY > 0) {
+      const gameTopY = this.offsetY;
+      const gameBottomY = this.offsetY + this.refHeight * this.scale;
 
+      // Top extension: Coastal tropical sky extending upward
       ctx.save();
-      ctx.globalAlpha = 0.35;
-      ctx.drawImage(this.images.bg, coverX, coverY, coverW, coverH);
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, gameTopY);
+      skyGrad.addColorStop(0, "#101b2b");
+      skyGrad.addColorStop(0.5, "#16283d");
+      skyGrad.addColorStop(1, "#26425f");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, this.canvas.width, gameTopY + 2);
 
-      // Smooth vignette gradient over margins
-      const grad = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-      grad.addColorStop(0, "rgba(10, 14, 24, 0.75)");
-      grad.addColorStop(0.5, "rgba(10, 14, 24, 0.35)");
-      grad.addColorStop(1, "rgba(10, 14, 24, 0.85)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      // Draw top edge slice of image into the sky transition
+      if (this.images.bg.complete) {
+        ctx.globalAlpha = 0.55;
+        ctx.drawImage(
+          this.images.bg,
+          0, 0, this.refWidth, 40,
+          this.offsetX, 0, this.refWidth * this.scale, gameTopY
+        );
+      }
+      ctx.restore();
+
+      // Bottom extension: Beach sand extending downward to screen edge
+      ctx.save();
+      const sandGrad = ctx.createLinearGradient(0, gameBottomY - 2, 0, this.canvas.height);
+      sandGrad.addColorStop(0, "#cb9f6e");
+      sandGrad.addColorStop(0.4, "#bf9362");
+      sandGrad.addColorStop(1, "#aa7d4f");
+      ctx.fillStyle = sandGrad;
+      ctx.fillRect(0, gameBottomY - 2, this.canvas.width, this.canvas.height - gameBottomY + 4);
+
+      // Repeat / stretch bottom sand texture slice downward
+      if (this.images.bg.complete) {
+        ctx.globalAlpha = 0.50;
+        ctx.drawImage(
+          this.images.bg,
+          0, 780, this.refWidth, 68,
+          this.offsetX, gameBottomY - 2, this.refWidth * this.scale, this.canvas.height - gameBottomY + 4
+        );
+      }
+      ctx.restore();
+    }
+
+    if (this.offsetX > 0) {
+      // Side extensions for ultrawide screens
+      ctx.save();
+      ctx.fillStyle = "#0d141e";
+      ctx.fillRect(0, 0, this.offsetX, this.canvas.height);
+      ctx.fillRect(this.canvas.width - this.offsetX, 0, this.offsetX, this.canvas.height);
       ctx.restore();
     }
 
@@ -232,15 +265,6 @@ export class GameRenderer {
 
     // 8. Draw Particle Effects (sand puffs, sparks)
     particles.draw(ctx);
-
-    // Subtle sleek boundary glow when letterboxed/pillarboxed
-    if (this.offsetX > 2 || this.offsetY > 2) {
-      ctx.save();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(0, 0, this.refWidth, this.refHeight);
-      ctx.restore();
-    }
 
     ctx.restore();
   }

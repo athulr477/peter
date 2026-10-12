@@ -11,6 +11,7 @@ window.addEventListener("DOMContentLoaded", () => {
     navigator.serviceWorker.register("./sw.js")
       .then((reg) => {
         console.log("Service Worker registered:", reg.scope);
+        reg.update();
       })
       .catch((err) => {
         console.warn("Service Worker registration skipped:", err);

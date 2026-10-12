@@ -32,7 +32,7 @@ export class Goalkeeper {
 
     this.idleTimer = 0;
     this.diveProgress = 0;
-    this.reachRadius = this.levelConfig.reachRadius || 0.17; // Glove and arm extension reach (fair and realistic)
+    this.reachRadius = this.levelConfig.reachRadius || 0.09; // Fair glove/body reach, does not vacuum the ball
     this.aiGoalX = 0;
     this.aiGoalY = 0;
   }
@@ -46,8 +46,8 @@ export class Goalkeeper {
 
   onAimMove(aimDirectionX) {
     if (this.state === "anticipating") {
-      // Subtle anticipation lean toward aim side
-      this.x = aimDirectionX * 0.08;
+      // Subtle anticipation lean
+      this.x = aimDirectionX * 0.04;
     }
   }
 
@@ -65,48 +65,30 @@ export class Goalkeeper {
     this.targetX = targetWorldX;
     this.targetY = targetWorldY;
 
-    // Reaction delay based on power (harder shots leave less reaction window for keeper)
-    this.reactionDelay = Math.max(0.16, 0.26 - power * 0.06);
+    // Human reaction delay (keeper reacts after the ball is kicked, not before)
+    this.reactionDelay = Math.max(0.20, 0.28 - power * 0.05);
     this.reactionTimer = 0;
     this.diveProgress = 0;
 
-    const roll = Math.random();
+    // Independent blind guess: penalty goalkeepers commit to a direction independently of the shot
+    // 45% dives Left, 45% dives Right, 10% freezes Center
+    const guessRoll = Math.random();
     let diveTargetX = 0;
-    let diveTargetY = targetWorldY * 0.72;
+    let diveTargetY = Math.min(0.35, Math.random() * 0.32);
 
-    // Realistic penalty shootout goalkeeper decision making:
-    // Real penalty goalkeepers must guess a direction or hold center
-    if (Math.abs(targetWorldX) < 0.22) {
-      // Central shot:
-      // 45% chance keeper gambles and dives toward a post, leaving center open!
-      // 55% chance keeper stays relatively central and saves it
-      if (roll < 0.45) {
-        diveTargetX = (roll < 0.22 ? -1 : 1) * (0.35 + Math.random() * 0.12);
-      } else {
-        diveTargetX = targetWorldX * 0.55;
-      }
+    if (guessRoll < 0.45) {
+      // Dive Left
+      diveTargetX = -(0.28 + Math.random() * 0.08);
+    } else if (guessRoll < 0.90) {
+      // Dive Right
+      diveTargetX = 0.28 + Math.random() * 0.08;
     } else {
-      // Shot aimed towards a side:
-      const targetSide = Math.sign(targetWorldX); // -1 (left) or 1 (right)
-      const wrongChance = this.levelConfig.wrongGuessChance ?? 0.32;
-
-      if (roll < wrongChance) {
-        // Goalkeeper guesses WRONG side! (Dives opposite way -> GOAL!)
-        diveTargetX = -targetSide * (0.32 + Math.random() * 0.15);
-      } else if (roll < wrongChance + 0.20) {
-        // Goalkeeper hesitates / late dive
-        this.reactionDelay += 0.10;
-        diveTargetX = targetSide * (0.28 + Math.random() * 0.14);
-      } else {
-        // Goalkeeper anticipates correct side!
-        // But human dive reach is physically limited - corner shots beat them!
-        diveTargetX = targetSide * Math.min(0.42, Math.abs(targetWorldX) * 0.75);
-      }
+      // Stay Center / late jump
+      diveTargetX = 0;
     }
 
-    // Limit maximum goalkeeper reach so corners and top bins are beatable with good shots!
-    this.aiGoalX = Math.max(-0.44, Math.min(0.44, diveTargetX));
-    this.aiGoalY = Math.max(0, Math.min(0.45, diveTargetY));
+    this.aiGoalX = diveTargetX;
+    this.aiGoalY = diveTargetY;
   }
 
   update(dt) {

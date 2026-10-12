@@ -181,6 +181,46 @@ const mockParticles = {
   assert(evalFail.passed === false, "1 goal fails Level 1 target of 2 goals");
 }
 
+// 11. Goalkeeper Reach Radius & Fair Play Test
+{
+  const keeper = new Goalkeeper();
+  assert(keeper.reachRadius <= 0.10, `Goalkeeper reach radius is fair and under 0.10 (got: ${keeper.reachRadius})`);
+}
+
+// 12. Corner Goal Beating Diving Goalkeeper Test
+{
+  const ball = new BallPhysics();
+  const keeper = new Goalkeeper();
+  // Keeper dives to the right side
+  keeper.x = 0.30;
+  keeper.y = 0.20;
+
+  // Shot placed into the top-right corner
+  ball.shoot(0.55, 0.50, 1.0, 0.0, 0.0);
+
+  for (let i = 0; i < 20; i++) {
+    ball.update(0.05, keeper, mockParticles, mockAudio);
+  }
+  assert(ball.result === "GOAL!", `Shot placed in the corner beats diving keeper and scores GOAL! (got: ${ball.result})`);
+}
+
+// 13. Keeper Dives Wrong Way -> Guaranteed Goal Test
+{
+  const ball = new BallPhysics();
+  const keeper = new Goalkeeper();
+  // Keeper dives left
+  keeper.x = -0.32;
+  keeper.y = 0.15;
+
+  // Shot aimed at center-right
+  ball.shoot(0.20, 0.35, 1.0, 0.0, 0.0);
+
+  for (let i = 0; i < 20; i++) {
+    ball.update(0.05, keeper, mockParticles, mockAudio);
+  }
+  assert(ball.result === "GOAL!", `Shot to opposite side of keeper dive scores GOAL! (got: ${ball.result})`);
+}
+
 console.log(`=== TEST SUMMARY: ${passed} / ${total} PASSED ===`);
 if (passed === total) {
   process.exit(0);

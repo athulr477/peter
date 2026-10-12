@@ -214,12 +214,12 @@ export class InputController {
 
     // Ball center in ref coords is ~ (632, 750)
     const distToBall = Math.hypot(ref.x - 632, ref.y - 750);
-
-    // On small screens, enlarge the touch zone to make it easier to start a swipe
     const touchZoneRadius = this._getScaledTouchZone();
 
-    // Allow swipe start from ball area or lower portion of screen
-    if (distToBall < touchZoneRadius || ref.y > 550) {
+    // Allow swipe start from ball area, below goal line, or lower portion of screen
+    const isLowerScreen = screenY > (window.innerHeight * 0.40);
+
+    if (distToBall < touchZoneRadius || ref.y > 520 || isLowerScreen) {
       this.isDragging = true;
       this.startScreenX = screenX;
       this.startScreenY = screenY;
@@ -254,24 +254,24 @@ export class InputController {
     }
 
     // Convert swipe vector to target in world coordinates
-    const startRef = this.renderer.screenToRef(this.startScreenX, this.startScreenY);
-    const endRef = this.renderer.screenToRef(endScreenX, endScreenY);
-
-    const refDx = endRef.x - startRef.x;
-    const refDy = endRef.y - startRef.y;
+    // Use rendered game dimensions on screen for perfectly consistent aiming across all devices
+    const gameW = (this.renderer.refWidth * this.renderer.scale) / this.renderer.dpr;
+    const gameH = (this.renderer.refHeight * this.renderer.scale) / this.renderer.dpr;
 
     // Shot target X: 0 is center, -0.74 is left post, +0.74 is right post
-    const targetWorldX = Math.max(-0.95, Math.min(0.95, (refDx / 160) * 0.72));
+    const lateralFraction = dx / Math.max(80, gameW * 0.28);
+    const targetWorldX = Math.max(-0.85, Math.min(0.85, lateralFraction * 0.65));
 
     // Shot target Y: 0 is ground, 0.71 is crossbar
-    const targetWorldY = Math.max(0.05, Math.min(0.88, (-refDy / 220) * 0.70));
+    const verticalFraction = (-dy) / Math.max(80, gameH * 0.40);
+    const targetWorldY = Math.max(0.08, Math.min(0.82, verticalFraction * 0.55));
 
     // Shot power and speed based on swipe velocity
     const speedPxPerSec = (swipeDist / duration) * 1000;
-    const power = Math.max(0.7, Math.min(1.4, speedPxPerSec / this._getPowerDivisor()));
+    const power = Math.max(0.75, Math.min(1.35, speedPxPerSec / this._getPowerDivisor()));
 
     // Lateral spin curve based on horizontal swipe flick
-    const curve = Math.max(-0.4, Math.min(0.4, (refDx / 200) * 0.35));
+    const curve = Math.max(-0.35, Math.min(0.35, (dx / Math.max(60, gameW * 0.35)) * 0.30));
 
     if (this.onShootCallback) {
       this.onShootCallback(targetWorldX, targetWorldY, power, curve);
