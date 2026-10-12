@@ -1,7 +1,7 @@
 // Beach Penalty Shootout — Service Worker
 // Instant auto-refresh on updates + full offline play
 
-const CACHE_NAME = "beach-penalty-v3";
+const CACHE_NAME = "beach-penalty-v4";
 
 const CORE_ASSETS = [
   "./",
@@ -122,16 +122,20 @@ self.addEventListener("fetch", (event) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-      return fetch(req).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
+      return fetch(req)
+        .then((networkResponse) => {
+          if (!networkResponse || networkResponse.status !== 200) {
+            return networkResponse;
+          }
+          const cloned = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(req, cloned);
+          });
           return networkResponse;
-        }
-        const cloned = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(req, cloned);
+        })
+        .catch(() => {
+          return caches.match(req);
         });
-        return networkResponse;
-      });
     })
   );
 });

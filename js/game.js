@@ -80,6 +80,11 @@ export class BeachPenaltyGame {
         // Complete preloading
         if (this.ui.loadingOverlay) {
           this.ui.loadingOverlay.classList.add("hidden");
+          setTimeout(() => {
+            if (this.ui.loadingOverlay) {
+              this.ui.loadingOverlay.style.display = "none";
+            }
+          }, 300);
         }
         this.loadLevel(this.levelManager.currentLevelId);
         this.state = "READY";

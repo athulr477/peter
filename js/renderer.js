@@ -53,37 +53,57 @@ export class GameRenderer {
       { key: "ready", webp: "assets/goalkeeper-ready-cutout.webp", fallback: "assets/goalkeeper-ready-cutout.png" },
     ];
 
+    let finished = false;
+    const safeComplete = () => {
+      if (finished) return;
+      finished = true;
+      this.allLoaded = true;
+      if (onComplete) onComplete();
+    };
+
+    // Safety failsafe: Never block game startup longer than 1200ms
+    const safetyTimer = setTimeout(() => {
+      safeComplete();
+    }, 1200);
+
     const markFinished = () => {
       this.loadedCount++;
-      if (onProgress) onProgress(this.loadedCount / this.totalImages);
-      if (this.loadedCount === this.totalImages) {
-        this.allLoaded = true;
-        if (onComplete) onComplete();
+      if (onProgress) onProgress(Math.min(1.0, this.loadedCount / this.totalImages));
+      if (this.loadedCount >= this.totalImages) {
+        clearTimeout(safetyTimer);
+        safeComplete();
       }
     };
 
     assets.forEach((item) => {
       const img = this.images[item.key];
       let triedFallback = false;
+      let handled = false;
 
-      img.onload = () => {
-        markFinished();
-      };
-
-      img.onerror = () => {
-        if (!triedFallback && item.fallback) {
-          triedFallback = true;
-          console.warn(`WebP failed for ${item.key}, trying fallback: ${item.fallback}`);
-          img.src = item.fallback;
-        } else {
-          console.error("Failed to load asset:", img.src);
-          // Mark finished so loading screen doesn't block forever
+      const onDone = () => {
+        if (!handled) {
+          handled = true;
           markFinished();
         }
       };
 
-      // Try modern WebP first
-      img.src = item.webp;
+      img.onload = onDone;
+
+      img.onerror = () => {
+        if (!triedFallback && item.fallback) {
+          triedFallback = true;
+          img.src = item.fallback;
+        } else {
+          onDone();
+        }
+      };
+
+      // If already cached and decoded, mark done immediately
+      if (img.complete && img.naturalWidth > 0) {
+        onDone();
+      } else {
+        img.src = item.webp;
+      }
     });
   }
 

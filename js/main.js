@@ -2,7 +2,7 @@
 
 import { BeachPenaltyGame } from "./game.js";
 
-window.addEventListener("DOMContentLoaded", () => {
+function initApp() {
   const game = new BeachPenaltyGame();
   window.__penaltyGame = game; // Expose for testing and debugging
 
@@ -17,5 +17,12 @@ window.addEventListener("DOMContentLoaded", () => {
         console.warn("Service Worker registration skipped:", err);
       });
   }
-});
+}
+
+// Guarantee execution whether DOM is loading, interactive, or complete
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
 
